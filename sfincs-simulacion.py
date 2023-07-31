@@ -51,6 +51,7 @@ translate_directorio = r"C:\Users\gprietod\AppData\Local\Packages\PythonSoftware
 
 dtout       = 43200
 dtmaxout    = 43200
+trsout      = 0
 dtrstout    = 0
 dtwnd       = 0
 alpha       = 0.5
@@ -229,7 +230,8 @@ def forcing(sf):
     **{
         "dtout": f"{dtout}",
         "dtmaxout": f"{dtmaxout}",
-        "dtrstout": f"dtrstout",
+        "dtrstout": f"{dtrstout}",
+        "trsout": f"{trsout}",
         "dtwnd": f"dtwnd",
         "alpha": f"{alpha}",
         "huthresh": f"{huthresh}",
