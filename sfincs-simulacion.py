@@ -384,10 +384,6 @@ def run_model():
 
     os.system(os.path.join(presults,"run.bat"))
 
-    #FNULL = open(os.devnull, 'w')
-    #args = r"D:\03_SFINCS\SFINCS_2023_release_Q2\SFINCS_v2.0.2_Blockhaus_release_exe\sfincs.exe > sfincs_log.txt"
-    #subprocess.call(args, stdout=FNULL, stderr=FNULL, shell=False)
-
     os.chdir(cur_dir)
 
 """
@@ -496,3 +492,5 @@ if __name__ == "__main__":
 
     dir_list = os.listdir(sf.root)
     print(dir_list)
+
+    #github
