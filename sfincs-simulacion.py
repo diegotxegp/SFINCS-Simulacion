@@ -232,7 +232,7 @@ def forcing(sf):
         "dtmaxout": f"{dtmaxout}",
         "dtrstout": f"{dtrstout}",
         "trsout": f"{trsout}",
-        "dtwnd": f"dtwnd",
+        "dtwnd": f"{dtwnd}",
         "alpha": f"{alpha}",
         "huthresh": f"{huthresh}",
         "manning": f"{manning}",
