@@ -51,12 +51,23 @@ translate_directorio = r"C:\Users\gprietod\AppData\Local\Packages\PythonSoftware
 
 dtout       = 43200
 dtmaxout    = 43200
+dtrstout    = 0
+dtwnd       = 0
 alpha       = 0.5
 huthresh    = 0.001
 manning     = 0.15
 manning_land= 0.15
 manning_sea = 0.02
 rgh_lev_land= -0.001
+rhoa        = 0
+rhow        = 0
+advection   = 0
+gapres      = 0
+btfilter    = 0
+viscosity   = 0
+cdnrb       = 0
+cdwnd       = 0
+cdval       = 0
 
 
 #######################################################################################################################################################
@@ -218,12 +229,23 @@ def forcing(sf):
     **{
         "dtout": f"{dtout}",
         "dtmaxout": f"{dtmaxout}",
+        "dtrstout": f"dtrstout",
+        "dtwnd": f"dtwnd",
         "alpha": f"{alpha}",
         "huthresh": f"{huthresh}",
         "manning": f"{manning}",
         "manning_land": f"{manning_land}",
         "manning_sea": f"{manning_sea}",
         "rgh_lev_land": f"{rgh_lev_land}",
+        "rhoa": f"{rhoa}",
+        "rhow": f"{rhow}",
+        "advection": f"{advection}",
+        "gapres": f"{gapres}",
+        "btfilter": f"{btfilter}",
+        "viscosity": f"{viscosity}",
+        "cdnrb": f"{cdnrb}",
+        "cdwnd": f"{cdwnd}",
+        "cdval": f"{cdval}",
     }
     )
 
@@ -472,5 +494,3 @@ if __name__ == "__main__":
 
     dir_list = os.listdir(sf.root)
     print(dir_list)
-
-    #github
