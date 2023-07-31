@@ -264,6 +264,7 @@ def forcing(sf):
 
     bzspd = pd.DataFrame(index=time, columns=index, data=bzs)
 
+    da_mdt = xr.open_dataarray(mdt_tif)
     sf.setup_waterlevel_forcing(timeseries=bzspd, locations=bnd)
 
     sf.forcing.keys()
