@@ -351,7 +351,7 @@ def build_model(yaml, mdt_tif, buffer_shp, manning_tif):
     sf.setup_mask_active(zmin=zmin, zmax=zmax, reset_mask=True)
 
     gdf_include = sf.data_catalog.get_geodataframe(buffer_shp)
-    sf.setup_mask_bounds(btype="waterlevel", include_mask=gdf_include, reset_bounds=True)
+    sf.setup_mask_bounds(btype="waterlevel", include_mask=gdf_include, reset_bounds=True, all_touched=True)
 
     if manning != "":
         da_manning = xr.open_dataarray(manning_tif)
