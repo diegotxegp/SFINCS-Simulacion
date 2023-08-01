@@ -10,6 +10,7 @@ import numpy as np
 from osgeo import gdal
 
 import rasterio
+from rasterio.mask import mask
 import subprocess
 
 # import hydromt and setup logging
@@ -37,7 +38,8 @@ flood_case = "storm_sta"  # 'storm_sta' or 'storm_dyn'
 _alpha = ""  # empty: no alpha / '_alpha1' or '_alpha2' or '_alpha3' or whatever alpha case you want to simulate
 
 buffer_file = "CFCC08_coast_buffer_A.shp"
-manning_file = "cfcc08_dem_a_manning.asc"
+manning_file = "cfcc08_dem_a_manning.asc" # Si vacío, se ejecuta valores Manning por defecto
+lucascorine_file = "LucasCorine_30m_2019_masked_25.tif"
 
 zmin = 0
 zmax = 15
@@ -133,6 +135,34 @@ def asc2tif(asc_in):
     print("TIFF created")
 
     return tif_out
+
+
+"""
+Conversor de formato ascii (.asc) a formato shapefile (.shp)
+"""
+def asc_to_shp(asc_in):
+
+    """
+    Mantener el sistema de coordenadas
+    """
+    def _keep_spatial_reference(shp_in, ref_in):
+
+        crs = get_crs(ref_in)
+
+        shp_destino = gpd.read_file(shp_in)
+        shp_destino.to_file(shp_in,crs=crs)
+
+    print("ASC to SHP")
+
+    shp_out = os.path.splitext(asc_in)[0]+".shp"
+
+    command = ["python3", f"{polygonize_directorio}", asc_in, '-f', 'ESRI Shapefile', shp_out]
+    subprocess.call(command)
+
+    global buffer_shp
+    _keep_spatial_reference(shp_out, buffer_shp)
+
+    return shp_out
 
 
 """
@@ -484,38 +514,83 @@ def nc2cuttif(dir, epsg):
     print("¡.TIF RECORTADOS!")
 
 
-    """
-Conversor de formato ascii (.asc) a formato shapefile (.shp)
+
 """
-def asc_to_shp(asc_in):
+Recorta la imagen TIFF acorde al área indicada
+"""
+def extract_by_mask(tif_in, shp_in):
+    # Abre el archivo raster y el archivo shapefile
+    tif = rasterio.open(tif_in)
+    shp = gpd.read_file(shp_in)
 
-    """
-    Mantener el sistema de coordenadas
-    """
-    def _keep_spatial_reference(shp_in, ref_in):
+    # Unificar poligonos del shapefile para facilitar el enmascarado
+    shp_union = shp.unary_union
 
-        # Guardamos el EPSG
-        ref = gpd.read_file(ref_in)
-        epsg = ref.crs
+    # Recorta el archivo raster utilizando la geometría del shapefile como máscara
+    cropped_image, cropped_transform = mask(tif, [shp_union], crop=True)
 
-        shp_destino = gpd.read_file(shp_in)
-        shp_destino.to_file(shp_in,crs=epsg)
+    # Actualiza los metadatos del archivo raster recortado
+    cropped_meta = tif.meta.copy()
+    cropped_meta.update({
+        'transform': cropped_transform,
+        'height': cropped_image.shape[1],
+        'width': cropped_image.shape[2]
+    })
 
-    print("ASC to SHP")
+    # Guarda el resultado en un archivo TIFF
+    dem_out = os.path.splitext(mdt_file)[0]+"_masked_sfincs.tif"
+    tif_out = os.path.join(path_case, dem_out)
+    with rasterio.open(tif_out, 'w', **cropped_meta) as dst:
+        dst.write(cropped_image)
 
-    shp_out = os.path.splitext(asc_in)[0]+".shp"
-
-    command = ["python3", f"{polygonize_directorio}", asc_in, '-f', 'ESRI Shapefile', shp_out]
-    subprocess.call(command)
-
-    global buffer_shp
-    _keep_spatial_reference(shp_out, buffer_shp)
-
-    return shp_out
+    # Cierra los datasets
+    tif.close()
+    shp = None
 
 
+"""
+Reclasifica los valores del mapa máscara a unos nuevos indicados. Futuro: Habrá que cambiarlo para leer los nuevos valores por un fichero .txt.
+"""
+def reclassify(tif_in):
 
-if __name__ == "__main__":
+    # Abrir el archivo tif
+    with rasterio.open(tif_in) as src:
+        # Leer la matriz de datos
+        data = src.read(1)
+
+        # Definir las nuevas clases y los valores de reclasificación
+        clases = {
+            0.15: [1, 1],
+            0.2: [2, 8],
+            0.127: [9, 15],
+            0.1: [16, 21],
+            0.12: [22, 26],
+            0.05: [27, 31]
+        }
+
+        # Crear una matriz de ceros con las mismas dimensiones que los datos
+        reclasificado = np.zeros_like(data, dtype=np.float32)
+
+        # Recorrer cada clase y reclasificar los valores dentro del rango
+        for clase, rango in clases.items():
+            reclasificado[(data >= rango[0]) & (data <= rango[1])] = clase
+
+        np.savetxt(os.path.splitext(mdt_asc)[0]+"_manning.asc", reclasificado, fmt='%.3f')
+
+"""
+Genera un fichero manning
+"""
+def generation_manning_file():
+    
+    asc_to_shp(os.path.join(path_case, "cfcc10_dem_a.asc"),os.path.join(path_case, "cfcc10_dem_a.shp"))
+    extract_by_mask(os.path.join(path_case, lucascorine_file), os.path.join(path_case, "cfcc10_dem_a.shp"))
+    reclassify(os.path.join(path_case, "cfcc10_dem_a_masked_sfincs.tif"))
+
+
+"""
+Ejecuta la simulación de SFINCS
+"""
+def simulation_sfincs():
 
     yaml, mdt_tif, manning_tif, epsg = generate_yaml()
     sf = build_model(yaml, mdt_tif, buffer_shp, manning_tif)
@@ -524,4 +599,9 @@ if __name__ == "__main__":
 
     dir_list = os.listdir(sf.root)
     print(dir_list)
-    
+
+
+if __name__ == "__main__":
+
+    #generation_manning_file()
+    simulation_sfincs()
