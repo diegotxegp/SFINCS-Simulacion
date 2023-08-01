@@ -349,7 +349,7 @@ def build_model(yaml, mdt_tif, buffer_shp, manning_tif):
     datasets_dep = [{'elevtn': da}]
     sf.setup_dep(datasets_dep=datasets_dep)
 
-    sf.setup_mask_active(zmin=0, zmax=15, fill_area=0.0, reset_mask=True)
+    sf.setup_mask_active(zmin=zmin, zmax=zmax, fill_area=0.0, reset_mask=True)
 
     gdf_include = sf.data_catalog.get_geodataframe(buffer_shp)
     sf.setup_mask_bounds(btype="waterlevel", include_mask=gdf_include, reset_bounds=True, all_touched=True)
