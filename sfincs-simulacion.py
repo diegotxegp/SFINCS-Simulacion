@@ -524,6 +524,4 @@ if __name__ == "__main__":
 
     dir_list = os.listdir(sf.root)
     print(dir_list)
-
-    #Github
     
