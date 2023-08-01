@@ -46,6 +46,7 @@ input_dynamics = r"D:\03_SFINCS\CFCC08\input_dynamics\Input_SFINCS_storm_sta_A.m
 
 #
 translate_directorio = r"C:\Users\gprietod\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\osgeo\gdal_translate.exe"
+polygonize_directorio = r'C:\Users\gprietod\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\Scripts\gdal_polygonize.py'
 
 
 
@@ -264,7 +265,6 @@ def forcing(sf):
 
     bzspd = pd.DataFrame(index=time, columns=index, data=bzs)
 
-    da_mdt = xr.open_dataarray(mdt_tif)
     sf.setup_waterlevel_forcing(timeseries=bzspd, locations=bnd)
 
     sf.forcing.keys()
@@ -349,7 +349,7 @@ def build_model(yaml, mdt_tif, buffer_shp, manning_tif):
     datasets_dep = [{'elevtn': da}]
     sf.setup_dep(datasets_dep=datasets_dep)
 
-    sf.setup_mask_active(zmin=zmin, zmax=zmax, reset_mask=True)
+    sf.setup_mask_active(zmin=0, zmax=15, fill_area=0.0, reset_mask=True)
 
     gdf_include = sf.data_catalog.get_geodataframe(buffer_shp)
     sf.setup_mask_bounds(btype="waterlevel", include_mask=gdf_include, reset_bounds=True, all_touched=True)
@@ -482,6 +482,37 @@ def nc2cuttif(dir, epsg):
                         print(str(e))
 
     print("¡.TIF RECORTADOS!")
+
+
+    """
+Conversor de formato ascii (.asc) a formato shapefile (.shp)
+"""
+def asc_to_shp(asc_in):
+
+    """
+    Mantener el sistema de coordenadas
+    """
+    def _keep_spatial_reference(shp_in, ref_in):
+
+        # Guardamos el EPSG
+        ref = gpd.read_file(ref_in)
+        epsg = ref.crs
+
+        shp_destino = gpd.read_file(shp_in)
+        shp_destino.to_file(shp_in,crs=epsg)
+
+    print("ASC to SHP")
+
+    shp_out = os.path.splitext(asc_in)[0]+".shp"
+
+    command = ["python3", f"{polygonize_directorio}", asc_in, '-f', 'ESRI Shapefile', shp_out]
+    subprocess.call(command)
+
+    global buffer_shp
+    _keep_spatial_reference(shp_out, buffer_shp)
+
+    return shp_out
+
 
 
 if __name__ == "__main__":
