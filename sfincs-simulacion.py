@@ -31,18 +31,14 @@ from DiegoLibrary import get_crs, asc2tif
 
 ################################################ MODIFICAR AQUÍ ######################################################################################
 ######################################################################################################################################################
-# Dir general
-path_main = r'D:\03_SFINCS'
 
 # Datos del caso
-control_case = "CFCC08"
-option = "A"
-mdt = r"D:\03_SFINCS\CFCC08\cfcc08_dem_a.asc"
+mdt_asc = r"D:\03_SFINCS\CFCC08\cfcc08_dem_a.asc"
 flood_case = "storm_sta"  # 'storm_sta' or 'storm_dyn'
 _alpha = ""  # empty: no alpha / '_alpha1' or '_alpha2' or '_alpha3' or whatever alpha case you want to simulate
 
-buffer_file = "CFCC08_coast_buffer_A.shp"
-manning_file = "cfcc08_dem_a_manning.asc" # Si vacío, se ejecuta valores Manning por defecto
+buffer_shp = r"D:\03_SFINCS\CFCC08\CFCC08_coast_buffer_A.shp"
+manning_asc = r"D:\03_SFINCS\CFCC08\cfcc08_dem_a_manning.asc" # Si vacío, se ejecuta valores Manning por defecto
 lucascorine_file = "D:\LucasCorine_30m_2019.tif"
 
 zmin = 0
@@ -80,9 +76,11 @@ cdval       = 0
 
 #######################################################################################################################################################
 
-path_case = os.path.dirname(mdt) # Dir principal del caso
-buffer_shp = os.path.join(path_case, buffer_file) # Ruta coast buffer
-manning_asc = os.path.join(path_case, manning_file) # Ruta manning
+path_case = os.path.dirname(mdt_asc) # Dir principal del caso
+path_main = os.path.dirname(path_case)
+
+control_case = os.path.splitext(os.path.basename(mdt_asc))[0][0:6].upper()
+option = os.path.splitext(os.path.basename(mdt_asc))[0][-1].upper()
 
 crs = get_crs(buffer_shp)
 
@@ -100,7 +98,7 @@ def generate_yaml():
 
     global crs
 
-    mdt_tif = asc2tif(mdt, crs, translate)
+    mdt_tif = asc2tif(mdt_asc, crs, translate)
 
     name_mdt = os.path.basename(mdt_tif)
     namemdt = os.path.splitext(name_mdt)[0]
@@ -110,7 +108,7 @@ def generate_yaml():
 
     crs = crs.to_epsg()
 
-    if manning_file != "":
+    if manning_asc != "":
         manning_tif = asc2tif(manning_asc, crs, translate)
         name_manning = os.path.basename(manning_tif)
         namemanning = os.path.splitext(name_manning)[0]
@@ -321,7 +319,7 @@ def build_model(yaml, mdt_tif, buffer_shp, manning_tif):
     gdf_include = sf.data_catalog.get_geodataframe(buffer_shp)
     sf.setup_mask_bounds(btype="waterlevel", include_mask=gdf_include, reset_bounds=True, all_touched=True)
 
-    if manning_file != "":
+    if manning_asc != "":
         da_manning = xr.open_dataarray(manning_tif)
         datasets_rgh = [{"manning": da_manning}]
         sf.setup_manning_roughness(
@@ -467,7 +465,7 @@ def simulation_sfincs():
 
 def main_SFINCS():
     crs = get_crs(buffer_shp)
-    manning.generation_manning_file(mdt, lucascorine_file, polygonize, translate, crs)
+    manning.generation_manning_file(mdt_asc, lucascorine_file, polygonize, translate, crs)
     simulation_sfincs()
 
 
