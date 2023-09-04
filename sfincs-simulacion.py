@@ -25,6 +25,10 @@ import scipy
 import shutil
 from datetime import datetime, timedelta
 
+from SFINCSManning import manning
+
+from DiegoLibrary import get_crs, asc2tif
+
 ################################################ MODIFICAR AQUÍ ######################################################################################
 ######################################################################################################################################################
 # Dir general
@@ -33,13 +37,13 @@ path_main = r'D:\03_SFINCS'
 # Datos del caso
 control_case = "CFCC08"
 option = "A"
-mdt_file = "cfcc08_dem_a.asc"
+mdt = r"D:\03_SFINCS\CFCC08\cfcc08_dem_a.asc"
 flood_case = "storm_sta"  # 'storm_sta' or 'storm_dyn'
 _alpha = ""  # empty: no alpha / '_alpha1' or '_alpha2' or '_alpha3' or whatever alpha case you want to simulate
 
 buffer_file = "CFCC08_coast_buffer_A.shp"
 manning_file = "cfcc08_dem_a_manning.asc" # Si vacío, se ejecuta valores Manning por defecto
-lucascorine_file = "LucasCorine_30m_2019_masked_25.tif"
+lucascorine_file = "D:\LucasCorine_30m_2019.tif"
 
 zmin = 0
 zmax = 15
@@ -47,8 +51,8 @@ zmax = 15
 input_dynamics = r"D:\03_SFINCS\CFCC08\input_dynamics\Input_SFINCS_storm_sta_A.mat"
 
 #
-translate_directorio = r"C:\Users\gprietod\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\osgeo\gdal_translate.exe"
-polygonize_directorio = r'C:\Users\gprietod\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\Scripts\gdal_polygonize.py'
+translate = r"C:\Users\gprietod\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\osgeo\gdal_translate.exe"
+polygonize = r'C:\Users\gprietod\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\Scripts\gdal_polygonize.py'
 
 
 
@@ -59,7 +63,7 @@ dtrstout    = 0
 dtwnd       = 0
 alpha       = 0.5
 huthresh    = 0.001
-manning     = 0.15
+manningg     = 0.15
 manning_land= 0.15
 manning_sea = 0.02
 rgh_lev_land= -0.001
@@ -76,114 +80,53 @@ cdval       = 0
 
 #######################################################################################################################################################
 
-path_case = os.path.join(path_main, control_case) # Dir principal del caso
-
-mdt_asc = os.path.join(path_case, mdt_file) # Ruta mdt
+path_case = os.path.dirname(mdt) # Dir principal del caso
 buffer_shp = os.path.join(path_case, buffer_file) # Ruta coast buffer
 manning_asc = os.path.join(path_case, manning_file) # Ruta manning
 
+crs = get_crs(buffer_shp)
+
 
 # Carpeta de resultados de SFINCS
-presults = os.path.join(path_case,"results",f"{control_case}_{option}_{flood_case}{_alpha}")
+presults = os.path.join(path_case,"SFINCS-results",f"{control_case}_{option}_{flood_case}{_alpha}")
 if not os.path.exists(presults):
-    os.mkdir(presults)
-
-"""
-Consigue el código EPSG
-@input shp/tif
-@output CRS
-"""
-def get_crs(file_in):
-
-    if os.path.splitext(file_in)[1] == ".shp":
-        shp = gpd.read_file(file_in)
-        return shp.crs
-    
-    elif os.path.splitext(file_in)[1] == ".tif":
-        with rasterio.open(file_in) as f:
-            return f.crs
-    
-    else:
-        print("File not suitable")
-        return
+    os.makedirs(presults)
 
 
 """
-Conversor de formato ASCII a formato TIFF
-@input ASCII (.asc)
-"""
-def asc2tif(asc_in):
-
-    """
-    Mantener el sistema de coordenadas
-    """
-    def _keep_spatial_reference(tif_in, ref_in):
-        crs = get_crs(ref_in)        
-        with rasterio.open(tif_in, 'r+') as f:
-            f.crs = crs
-
-
-    print("ASCII to TIFF")
-    tif_out = os.path.splitext(asc_in)[0]+".tif"
-    args = f"{translate_directorio} -of \"GTiff\" {asc_in} {tif_out}"
-    subprocess.call(args, stdout=None, stderr=None, shell=False)
-
-
-    global buffer_shp
-    _keep_spatial_reference(tif_out, buffer_shp)
-
-    print("TIFF created")
-
-    return tif_out
-
-
-"""
-Conversor de formato ascii (.asc) a formato shapefile (.shp)
-"""
-def asc_to_shp(asc_in):
-
-    """
-    Mantener el sistema de coordenadas
-    """
-    def _keep_spatial_reference(shp_in, ref_in):
-
-        crs = get_crs(ref_in)
-
-        shp_destino = gpd.read_file(shp_in)
-        shp_destino.to_file(shp_in,crs=crs)
-
-    print("ASC to SHP")
-
-    shp_out = os.path.splitext(asc_in)[0]+".shp"
-
-    command = ["python3", f"{polygonize_directorio}", asc_in, '-f', 'ESRI Shapefile', shp_out]
-    subprocess.call(command)
-
-    global buffer_shp
-    _keep_spatial_reference(shp_out, buffer_shp)
-
-    return shp_out
-
-
-"""
-Genera el fichero YAML.
+Genera el fichero YAML para SFINCS.
 """
 def generate_yaml():
 
-    mdt_tif = asc2tif(mdt_asc)
-    manning_tif = asc2tif(manning_asc)
+    global crs
 
+    mdt_tif = asc2tif(mdt, crs, translate)
 
     name_mdt = os.path.basename(mdt_tif)
     namemdt = os.path.splitext(name_mdt)[0]
-    crs = get_crs(mdt_tif)
-    crs = str(crs)[5:]
 
     name_buffer = os.path.basename(buffer_shp)
     namebuffer = os.path.splitext(name_buffer)[0]
 
-    name_manning = os.path.basename(manning_tif)
-    namemanning = os.path.splitext(name_manning)[0]
+    crs = crs.to_epsg()
+
+    if manning_file != "":
+        manning_tif = asc2tif(manning_asc, crs, translate)
+        name_manning = os.path.basename(manning_tif)
+        namemanning = os.path.splitext(name_manning)[0]
+
+        m = f"""{namemanning}:
+            path: {name_manning}
+            data_type: GeoDataFrame
+            driver: vector
+            crs: {crs}
+            meta:
+                category: roughness"""
+    else:
+        manning_tif = None
+        name_manning = ""
+        namemanning = ""
+        m = ""
 
 
     yml_str = f"""
@@ -206,14 +149,8 @@ def generate_yaml():
         meta:
             category: topobathy
 
-    {namemanning}:
-        path: {name_manning}
-        data_type: GeoDataFrame
-        driver: vector
-        crs: {crs}
-        meta:
-            category: roughness
-        """
+    {m}
+     """
     
     yaml = os.path.splitext(mdt_tif)[0]+".yaml"
     with open(yaml, mode="w") as f:
@@ -239,7 +176,7 @@ def generate_grid(sf, mdt_tif):
         cell_extent = f.transform[0]
 
     crs = get_crs(mdt_tif)
-    crs = str(crs)[5:]
+    epsg = crs.to_epsg()
 
     sf.setup_grid(
     x0=bounds.left,
@@ -249,7 +186,7 @@ def generate_grid(sf, mdt_tif):
     nmax=width,
     mmax=height,
     rotation=0,
-    epsg=crs,
+    epsg=epsg,
     )
 
 
@@ -266,7 +203,7 @@ def forcing(sf):
         "dtwnd": f"{dtwnd}",
         "alpha": f"{alpha}",
         "huthresh": f"{huthresh}",
-        "manning": f"{manning}",
+        "manning": f"{manningg}",
         "manning_land": f"{manning_land}",
         "manning_sea": f"{manning_sea}",
         "rgh_lev_land": f"{rgh_lev_land}",
@@ -514,79 +451,6 @@ def nc2cuttif(dir, epsg):
     print("¡.TIF RECORTADOS!")
 
 
-
-"""
-Recorta la imagen TIFF acorde al área indicada
-"""
-def extract_by_mask(tif_in, shp_in):
-    # Abre el archivo raster y el archivo shapefile
-    tif = rasterio.open(tif_in)
-    shp = gpd.read_file(shp_in)
-
-    # Unificar poligonos del shapefile para facilitar el enmascarado
-    shp_union = shp.unary_union
-
-    # Recorta el archivo raster utilizando la geometría del shapefile como máscara
-    cropped_image, cropped_transform = mask(tif, [shp_union], crop=True)
-
-    # Actualiza los metadatos del archivo raster recortado
-    cropped_meta = tif.meta.copy()
-    cropped_meta.update({
-        'transform': cropped_transform,
-        'height': cropped_image.shape[1],
-        'width': cropped_image.shape[2]
-    })
-
-    # Guarda el resultado en un archivo TIFF
-    dem_out = os.path.splitext(mdt_file)[0]+"_masked_sfincs.tif"
-    tif_out = os.path.join(path_case, dem_out)
-    with rasterio.open(tif_out, 'w', **cropped_meta) as dst:
-        dst.write(cropped_image)
-
-    # Cierra los datasets
-    tif.close()
-    shp = None
-
-
-"""
-Reclasifica los valores del mapa máscara a unos nuevos indicados. Futuro: Habrá que cambiarlo para leer los nuevos valores por un fichero .txt.
-"""
-def reclassify(tif_in):
-
-    # Abrir el archivo tif
-    with rasterio.open(tif_in) as src:
-        # Leer la matriz de datos
-        data = src.read(1)
-
-        # Definir las nuevas clases y los valores de reclasificación
-        clases = {
-            0.15: [1, 1],
-            0.2: [2, 8],
-            0.127: [9, 15],
-            0.1: [16, 21],
-            0.12: [22, 26],
-            0.05: [27, 31]
-        }
-
-        # Crear una matriz de ceros con las mismas dimensiones que los datos
-        reclasificado = np.zeros_like(data, dtype=np.float32)
-
-        # Recorrer cada clase y reclasificar los valores dentro del rango
-        for clase, rango in clases.items():
-            reclasificado[(data >= rango[0]) & (data <= rango[1])] = clase
-
-        np.savetxt(os.path.splitext(mdt_asc)[0]+"_manning.asc", reclasificado, fmt='%.3f')
-
-"""
-Genera un fichero manning
-"""
-def generation_manning_file():
-    
-    asc_to_shp(os.path.join(path_case, "cfcc10_dem_a.asc"),os.path.join(path_case, "cfcc10_dem_a.shp"))
-    extract_by_mask(os.path.join(path_case, lucascorine_file), os.path.join(path_case, "cfcc10_dem_a.shp"))
-    reclassify(os.path.join(path_case, "cfcc10_dem_a_masked_sfincs.tif"))
-
-
 """
 Ejecuta la simulación de SFINCS
 """
@@ -601,7 +465,11 @@ def simulation_sfincs():
     print(dir_list)
 
 
-if __name__ == "__main__":
-
-    #generation_manning_file()
+def main_SFINCS():
+    crs = get_crs(buffer_shp)
+    manning.generation_manning_file(mdt, lucascorine_file, polygonize, translate, crs)
     simulation_sfincs()
+
+
+if __name__ == "__main__":
+    main_SFINCS()
