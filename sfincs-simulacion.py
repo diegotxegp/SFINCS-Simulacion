@@ -46,12 +46,6 @@ zmax = 15
 
 input_dynamics = r"D:\03_SFINCS\CFCC08\input_dynamics\Input_SFINCS_storm_sta_A.mat"
 
-#
-translate = r"C:\Users\gprietod\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\osgeo\gdal_translate.exe"
-polygonize = r'C:\Users\gprietod\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\Scripts\gdal_polygonize.py'
-
-
-
 dtout       = 43200
 dtmaxout    = 43200
 trsout      = 0
@@ -75,6 +69,11 @@ cdval       = 0
 
 
 #######################################################################################################################################################
+
+user = os.getcwd()
+
+translate = fr"{user}\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\osgeo\gdal_translate.exe"
+polygonize = fr'{user}\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\Scripts\gdal_polygonize.py'
 
 path_case = os.path.dirname(mdt_asc) # Dir principal del caso
 path_main = os.path.dirname(path_case)
