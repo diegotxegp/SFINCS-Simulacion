@@ -39,7 +39,7 @@ _alpha = ""  # empty: no alpha / '_alpha1' or '_alpha2' or '_alpha3' or whatever
 
 buffer_shp = r"D:\03_SFINCS\CFCC08\CFCC08_coast_buffer_A.shp"
 manning_asc = r"D:\03_SFINCS\CFCC08\cfcc08_dem_a_manning.asc" # Si vacío, se ejecuta valores Manning por defecto
-lucascorine_file = "D:\LucasCorine_30m_2019.tif"
+lucascorine_tif = "D:\LucasCorine_30m_2019.tif"
 
 zmin = 0
 zmax = 15
@@ -88,6 +88,40 @@ crs = get_crs(buffer_shp)
 presults = os.path.join(path_case,"SFINCS-results",f"{control_case}_{option}_{flood_case}{_alpha}")
 if not os.path.exists(presults):
     os.makedirs(presults)
+
+
+"""
+Guarda en un fichero los parámetros usados para ejecutar RFSM
+"""
+def parameters2txt(file_txt):
+    with open(file_txt, "w") as f:
+        f.write(f"mdt = {mdt_asc}\n")
+        f.write(f"case_name = {control_case}\n")
+        f.write(f"option = {option}\n")
+        f.write(f"flood_case = {flood_case}\n")
+        f.write(f"alpha = {_alpha}\n")
+        f.write(f"buffer = {buffer_shp}\n")
+        f.write(f"lucascorine_tif = {lucascorine_tif}\n")
+        f.write(f"""dtout       = {dtout}
+                    dtmaxout    = {dtmaxout}
+                    trsout      = {trsout}
+                    dtrstout    = {dtrstout}
+                    dtwnd       = {dtwnd}
+                    alpha       = {alpha}
+                    huthresh    = {huthresh}
+                    manningg     = {manningg}
+                    manning_land= {manning_land}
+                    manning_sea = {manning_sea}
+                    rgh_lev_land= {rgh_lev_land}
+                    rhoa        = {rhoa}
+                    rhow        = {rhow}
+                    advection   = {advection}
+                    gapres      = {gapres}
+                    btfilter    = {btfilter}
+                    viscosity   = {viscosity}
+                    cdnrb       = {cdnrb}
+                    cdwnd       = {cdwnd}
+                    cdval       = {cdval}\n""")
 
 
 """
@@ -464,8 +498,9 @@ def simulation_sfincs():
 
 def main_SFINCS():
     crs = get_crs(buffer_shp)
-    manning.generation_manning_file(mdt_asc, lucascorine_file, polygonize, translate, crs)
+    manning.generation_manning_file(mdt_asc, lucascorine_tif, polygonize, translate, crs)
     simulation_sfincs()
+    parameters2txt(os.path.join(presults,"parameters-SFINCS.txt"))
 
 
 if __name__ == "__main__":
