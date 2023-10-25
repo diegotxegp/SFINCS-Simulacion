@@ -146,7 +146,7 @@ def generate_yaml():
 
     crs = crs.to_epsg()
 
-    if manning_asc != "":
+    if own_manning == True:
         manning_tif = asc2tif(manning_asc, crs, translate)
         name_manning = os.path.basename(manning_tif)
         namemanning = os.path.splitext(name_manning)[0]
@@ -357,7 +357,7 @@ def build_model(yaml, mdt_tif, buffer_shp, manning_tif):
     gdf_include = sf.data_catalog.get_geodataframe(buffer_shp)
     sf.setup_mask_bounds(btype="waterlevel", include_mask=gdf_include, reset_bounds=True, all_touched=True)
 
-    if manning_asc != "":
+    if own_manning == True:
         da_manning = xr.open_dataarray(manning_tif)
         datasets_rgh = [{"manning": da_manning}]
         sf.setup_manning_roughness(
@@ -503,7 +503,8 @@ def simulation_sfincs():
 
 def main_SFINCS():
     crs = get_crs(buffer_shp)
-    manning.generation_manning_file(mdt_asc, lucascorine_tif, polygonize, translate, crs)
+    if own_manning == True:
+        manning.generation_manning_file(mdt_asc, lucascorine_tif, polygonize, translate, crs)
     simulation_sfincs()
     parameters2txt(os.path.join(presults,"parameters-SFINCS.txt"))
 
