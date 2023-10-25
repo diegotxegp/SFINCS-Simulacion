@@ -38,7 +38,7 @@ flood_case = "storm_sta"  # 'storm_sta' or 'storm_dyn'
 _alpha = ""  # empty: no alpha / '_alpha1' or '_alpha2' or '_alpha3' or whatever alpha case you want to simulate
 
 buffer_shp = r"D:\03_SFINCS\CFCC08\CFCC08_coast_buffer_A.shp"
-manning_asc = r"D:\03_SFINCS\CFCC08\cfcc08_dem_a_manning.asc" # Si vacío, se ejecuta valores Manning por defecto
+own_manning = True # Si True, generar nuestro propio Manning. De lo contrario, usar los valores Manning por defecto
 lucascorine_tif = "D:\LucasCorine_30m_2019.tif"
 
 zmin = 0
@@ -69,6 +69,11 @@ cdval       = 0
 
 
 #######################################################################################################################################################
+
+manning_asc = ""
+
+if own_manning == True:
+    manning_asc = os.path.splitext(mdt_asc)[0] + "_manning.asc"
 
 user = os.getcwd()
 
