@@ -75,10 +75,9 @@ manning_asc = ""
 if own_manning == True:
     manning_asc = os.path.splitext(mdt_asc)[0] + "_manning.asc"
 
-user = os.getcwd()
-
-translate = fr"{user}\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\osgeo\gdal_translate.exe"
-polygonize = fr'{user}\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\Scripts\gdal_polygonize.py'
+user = os.getlogin()
+polygonize = fr"C:\Users\{user}\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\Scripts\gdal_polygonize.py"
+translate = fr"C:\Users\{user}\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\osgeo\gdal_translate.exe"
 
 path_case = os.path.dirname(mdt_asc) # Dir principal del caso
 path_main = os.path.dirname(path_case)
